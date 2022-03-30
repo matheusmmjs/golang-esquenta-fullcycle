@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	_ "github.com/labstack/echo/v4"
 	_ "github.com/mattn/go-sqlite3"
 )
 
