@@ -16,23 +16,7 @@ type Course struct {
 	Name string `json:"name"`
 }
 
-func generateCourses() {
-	course1 := Course{
-		ID:   "1",
-		Name: "Full Cycle",
-	}
-
-	course2 := Course{
-		ID:   "2",
-		Name: "Bonus Full Cycle",
-	}
-
-	courses = append(courses, course1, course2)
-}
-
 func main() {
-	generateCourses()
-
 	e := echo.New()
 
 	e.GET("/courses", listCourses)
@@ -42,11 +26,48 @@ func main() {
 }
 
 func listCourses(c echo.Context) error {
+	db, err := sql.Open("sqlite3", "test.db")
+
+	stmt, err := db.Prepare("SELECT * FROM courses")
+
+	if err != nil {
+		return err
+	}
+
+	rows, err := stmt.Query()
+
+	if err == rows.Err() {
+		return c.JSON(http.StatusBadRequest, nil)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	defer stmt.Close()
+
+	course := Course{}
+
+	for rows.Next() {
+		err = rows.Scan(&course.ID, &course.Name)
+
+		if err == rows.Err() {
+			return c.JSON(http.StatusUnprocessableEntity, nil)
+		}
+
+		if err != nil {
+			return err
+		}
+
+		courses = append(courses, course)
+	}
+
 	return c.JSON(http.StatusOK, courses)
 }
 
 func createCourse(c echo.Context) error {
 	course := Course{}
+
 	c.Bind(&course)
 
 	err := persistCourse(course)
@@ -77,6 +98,7 @@ func persistCourse(course Course) error {
 		return err
 	}
 
-	return nil
+	defer stmt.Close()
 
+	return nil
 }
